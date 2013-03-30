@@ -1,0 +1,9 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<resources>
+    <string name='app_name'>
+        Ruboto - MasterMind
+    </string>
+    <string name='header_text'>
+        Enter four numbers below and submit your guess
+    </string>
+</resources>
