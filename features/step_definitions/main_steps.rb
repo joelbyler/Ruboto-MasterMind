@@ -12,13 +12,50 @@ Then(/^I see "(.*?)"$/) do |text|
   on(MainScreen).has_text?(text).should == true
 end
 
-Then(/^I see a submit button$/) do
+Then(/^I press the submit button$/) do
   on(MainScreen).submit
 end
 
-Then(/^I can enter 4 numbers$/) do
+Then(/^I enter 4 numbers$/) do
   on(MainScreen).number1 = '1'
   on(MainScreen).number2 = '2'
   on(MainScreen).number3 = '3'
   on(MainScreen).number4 = '4'
 end
+
+Given(/^I enter (\d+) correct numbers and (\d+) correct position$/) do |numbers, positions|
+  nums = ['0', '0', '0', '0']
+  num = numbers.to_i
+  pos = positions.to_i
+  if pos == 1
+    if num >= 1
+      nums[0] = '4'
+    end
+    if num >= 2
+      nums[1] = '1'
+    end
+    if num >= 3
+      nums[2] = '9'
+    end
+    if num == 4
+      nums[3] = '2'
+    end
+  elsif pos == 2
+    nums = ['4', '2', '0', '0']
+    if num >= 3
+      nums[2] = '9'
+    end
+    if num == 4
+      nums[3] = '1'
+    end
+  elsif pos == 3
+    nums = ['4', '2', '1', '0']
+  elsif pos == 4
+    nums = ['4', '2', '1', '9']
+  end
+  on(MainScreen).number1 = nums[0]
+  on(MainScreen).number2 = nums[1]
+  on(MainScreen).number3 = nums[2]
+  on(MainScreen).number4 = nums[3]
+end
+

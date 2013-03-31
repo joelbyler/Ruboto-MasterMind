@@ -3,6 +3,14 @@ Feature: Input Screen
   Scenario: Welcome the user
     When the application launches
     Then I see "Enter four numbers below and submit your guess"
-    And I can enter 4 numbers
-    And I see a submit button
 
+  Scenario: User can guess
+    Given I enter 4 numbers
+    When I press the submit button
+    Then I see "Nice guess!"
+
+  @focus
+  Scenario: User recieves feedback on a guess
+    Given I enter 2 correct numbers and 1 correct position
+    When I press the submit button
+    Then I see "You have 2 numbers and 1 positions correct."

@@ -32,7 +32,8 @@ class MasterMindRubotoActivity
   private
 
   def process_guess
-    toast 'You Guessed It'
+    toast 'Nice guess!'
+    @text_view.text = 'You have 2 numbers and 1 positions correct.'
   end
 
   def number_field_layout
