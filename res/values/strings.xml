@@ -6,4 +6,5 @@
     <string name='header_text'>
         Enter four numbers below and submit your guess
     </string>
+    <string name="congrats">Congrats, you solved the puzzle</string>
 </resources>

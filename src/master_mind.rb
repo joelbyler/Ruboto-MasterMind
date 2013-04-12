@@ -1,4 +1,5 @@
 class MasterMind
+  attr_accessor :first, :second, :third, :forth
   def initialize (first=nil, second=nil, third=nil, forth=nil)
     if (first == nil)
       @first = rand(0..9)
@@ -21,73 +22,34 @@ class MasterMind
       @forth = forth
     end
   end
-  def first
-    @first
-  end
-  def second
-    @second
-  end
-  def third
-    @third
-  end
-  def fourth
-    @forth
+
+  def numbers
+    [@first, @second, @third, @forth]
   end
 
-  def guess (first, second, third, fourth)
-    correct_numbers = 0
+  def find_correct_positions(first, second, third, forth)
     correct_positions = 0
+    correct_positions += 1 if first == @first
+    correct_positions += 1 if second == @second
+    correct_positions += 1 if third == @third
+    correct_positions += 1 if forth == @forth
+    return correct_positions
+  end
 
-    if first == @first
-      correct_numbers = 1
-      correct_positions = 1
-    else
-      if second == @first
-        correct_numbers = 1
-      elsif third == @first
-        correct_numbers = 1
-      elsif fourth == @first
-        correct_numbers = 1
+  def find_correct_numbers (first, second, third, forth)
+    correct_numbers = 0
+    guessed_numbers = [first, second, third, forth]
+    numbers.each do |number|
+      if (guessed_numbers.include? number)
+        correct_numbers += 1
       end
     end
+    return correct_numbers
+  end
 
-    if second == @second
-      correct_numbers += 1
-      correct_positions += 1
-    else
-      if first == @second
-        correct_numbers += 1
-      elsif third == @second
-        correct_numbers += 1
-      elsif fourth == @second
-        correct_numbers += 1
-      end
-    end
-    if third == @third
-      correct_numbers += 1
-      correct_positions += 1
-    else
-      if first == @third
-        correct_numbers += 1
-      elsif second == @third
-        correct_numbers += 1
-      elsif fourth == @third
-        correct_numbers += 1
-      end
-    end
-    if fourth == @fourth
-      correct_numbers += 1
-      correct_positions += 1
-    else
-      if first == @fourth
-        correct_numbers += 1
-      elsif second == @fourth
-        correct_numbers += 1
-      elsif third == @fourth
-        correct_numbers += 1
-      end
-    end
-
+  def guess (first, second, third, forth)
+    correct_numbers = find_correct_numbers(first, second, third, forth)
+    correct_positions = find_correct_positions(first, second, third, forth)
     GuessResult.new correct_numbers, correct_positions
   end
 end

@@ -1,6 +1,7 @@
 require 'ruboto/widget'
 require 'ruboto/util/toast'
-
+require 'master_mind'
+require 'guess_result'
 ruboto_import_widgets :Button, :LinearLayout, :TextView, :EditText
 
 # http://xkcd.com/378/
@@ -10,6 +11,9 @@ java_import "com.joelbyler.mastermind.ruboto.R"
 class MasterMindRubotoActivity
   def on_create(bundle)
     super
+
+    @mastermind = MasterMind.new 4, 2, 1, 9
+
     set_title R::string::app_name
 
     self.content_view =
@@ -33,7 +37,14 @@ class MasterMindRubotoActivity
 
   def process_guess
     toast 'Nice guess!'
-    @text_view.text = 'You have 2 numbers and 1 positions correct.'
+
+    result = @mastermind.guess(@num1.text.to_s.to_i, @num2.text.to_s.to_i, @num3.text.to_s.to_i, @num4.text.to_s.to_i)
+
+    if result.correctly_guessed
+      @text_view.text = R::string::congrats
+    else
+      @text_view.text = 'You have 2 numbers and 1 positions correct.'
+    end
   end
 
   def number_field_layout

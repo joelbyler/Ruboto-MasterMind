@@ -59,3 +59,9 @@ Given(/^I enter (\d+) correct numbers and (\d+) correct position$/) do |numbers,
   on(MainScreen).number4 = nums[3]
 end
 
+Given(/^I enter all of the correct numbers$/) do
+  on(MainScreen).number1 = '4'
+  on(MainScreen).number2 = '2'
+  on(MainScreen).number3 = '1'
+  on(MainScreen).number4 = '9'
+end

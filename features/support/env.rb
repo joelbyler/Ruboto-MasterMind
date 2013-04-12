@@ -9,14 +9,7 @@ require_rel 'screens'
 
 World(Gametel::Navigation)
 
-keystore = {
-  :path => File.expand_path('~/.android/debug.keystore'),
-  :alias => 'androiddebugkey',
-  :password => 'android',
-  :keystore_password => 'android'
-}
-
-server = Brazenhead::Server.new("bin/MasterMindRuboto-debug.apk", keystore)
+server = Brazenhead::Server.new("bin/MasterMindRuboto-debug.apk")
 
 class Driver
   include Brazenhead

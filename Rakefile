@@ -4,7 +4,7 @@ require 'cucumber/rake/task'
 require 'rspec/core/rake_task'
 
 Cucumber::Rake::Task.new(:features) do |t|
-  t.profile = 'default'
+  t.profile = 'focus'
 end
 
 RSpec::Core::RakeTask.new(:spec) do |spec|
