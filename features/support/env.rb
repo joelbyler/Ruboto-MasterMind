@@ -17,7 +17,7 @@ end
 
 Before do
   @driver = Driver.new
-  server.start("MasterMindRubotoActivity")
+  server.start("MasterMindLaunchActivity")
 end
 
 After do

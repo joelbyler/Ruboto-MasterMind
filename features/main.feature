@@ -1,8 +1,10 @@
 @focus
 Feature: Input Screen
+  Background: Setup the application for use with test numbers
 
   Scenario: Welcome the user
-    When the application launches
+    Given the application launches
+    And I switch to demo mode
     Then I see "Enter four numbers below and submit your guess"
 
   Scenario: User can guess

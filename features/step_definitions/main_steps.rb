@@ -17,10 +17,7 @@ Then(/^I press the submit button$/) do
 end
 
 Then(/^I enter 4 numbers$/) do
-  on(MainScreen).number1 = '1'
-  on(MainScreen).number2 = '2'
-  on(MainScreen).number3 = '3'
-  on(MainScreen).number4 = '4'
+  on(MainScreen).guess 1, 2, 3, 4
 end
 
 Given(/^I enter (\d+) correct numbers and (\d+) correct position$/) do |numbers, positions|
