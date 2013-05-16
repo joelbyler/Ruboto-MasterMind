@@ -41,14 +41,23 @@ class MasterMindMainActivity
   end
 
   def onOptionsItemSelected(item)
-      # TODO: eventually we'll have more menu items but for now the only one goes to preferences
+    if item.get_item_id == $package.R.id.menu_about
+      start_about_activity
+    else
       start_preferences_activity
-      true
+    end
+    true
   end
 
   def start_preferences_activity
     i = android.content.Intent.new
     i.setClassName($package_name, "#{$package_name}.MasterMindPreferencesActivity")
+    startActivity(i)
+  end
+
+  def start_about_activity
+    i = android.content.Intent.new
+    i.setClassName($package_name, "#{$package_name}.MasterMindAboutActivity")
     startActivity(i)
   end
 

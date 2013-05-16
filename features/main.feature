@@ -1,4 +1,3 @@
-@focus
 Feature: Input Screen
   Background: Setup the application for use with test numbers
 

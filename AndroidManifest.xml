@@ -12,6 +12,7 @@
         <service android:exported='false' android:name='org.ruboto.RubotoService'/>
         <activity android:name='.MasterMindPreferencesActivity'/>
         <activity android:name='MasterMindMainActivity'/>
+        <activity android:name='MasterMindAboutActivity'/>
     </application>
     <uses-sdk android:minSdkVersion='15' android:targetSdkVersion='15'/>
     <uses-permission android:name='android.permission.INTERNET'/>

@@ -1,7 +1,7 @@
-class PreferencesScreen
+class AboutScreen
   include Gametel
 
-  activity "MasterMindPreferencesActivity"
+  activity "MasterMindAboutActivity"
 
   list_item(:demo_mode, :text => 'Demo Mode')
 
