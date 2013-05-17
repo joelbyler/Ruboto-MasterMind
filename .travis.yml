@@ -15,7 +15,7 @@ before_install:
     - unzip sysimg_armv7a-15_r02.zip -d ${ANDROID_HOME}/system-images/android-15
 
     # Update SDK
-    - android update sdk -u -f --filter 1,2    
+    - android update sdk -u -f --filter 1,2
     - android update sdk -u -f --filter android-15
 
     # Create an emulator for testing against
@@ -24,14 +24,14 @@ before_install:
 
     # Need to figure out how to get the emulator to start up properly
     - emulator -avd Android_4.0.3 -port 5554 -no-window -no-audio -no-boot-anim &
-    - sh wait_for_emulator.sh
+    - sh ./features/support/wait_for_emulator.sh
 
 language: ruby
 rvm:
-  - jruby-19mode  
+  - jruby-19mode
 
 before_script:
   - bundle exec rake debug
-  
+
 after_script:
   - bundle exec rake
