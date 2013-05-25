@@ -4,6 +4,14 @@ end
 
 Given(/^I switch to demo mode$/) do
   on(MainScreen).click_menu_item 'menu_prefs'
-  on(PreferencesScreen).demo_mode= 'on'
+  on(PreferencesScreen).demo_mode=true
+  on(PreferencesScreen).save
+  on(PreferencesScreen).back
 end
 
+Given(/^I have demo mode turned off$/) do
+  on(MainScreen).click_menu_item 'menu_prefs'
+  on(PreferencesScreen).demo_mode=false
+  on(PreferencesScreen).save
+  on(PreferencesScreen).back
+end

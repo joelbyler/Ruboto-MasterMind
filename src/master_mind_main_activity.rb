@@ -6,15 +6,15 @@ require 'guess_result'
 
 ruboto_import_widgets :Button, :LinearLayout, :TextView, :EditText
 
-#java_import "com.joelbyler.mastermind.ruboto.R"
 java_import "android.preference.PreferenceManager"
+java_import "android.content.Context"
 
 
 class MasterMindMainActivity
   def on_create(bundle)
     super
 
-    @mastermind = MasterMind.new 4, 2, 1, 9
+    initialize_game
 
     set_title $package.R::string::app_name
 
@@ -49,21 +49,45 @@ class MasterMindMainActivity
     true
   end
 
+  def initialize_game
+    if demo_mode
+      toast 'turning demo mode ON'
+      @mastermind = MasterMind.new 4, 2, 1, 9
+    else
+      toast 'turning demo mode OFF'
+      @mastermind = MasterMind.new
+    end
+  end
+  def on_pause
+    super
+    @demo_mode = demo_mode
+  end
+
+  def on_resume
+    super
+    if @demo_mode != demo_mode
+      initialize_game
+    end
+  end
+
   def start_preferences_activity
-    i = android.content.Intent.new
-    i.setClassName($package_name, "#{$package_name}.MasterMindPreferencesActivity")
-    startActivity(i)
+    start_an_activity "MasterMindPreferencesActivity"
   end
 
   def start_about_activity
+    start_an_activity "MasterMindAboutActivity"
+  end
+
+  def start_an_activity (activity)
     i = android.content.Intent.new
-    i.setClassName($package_name, "#{$package_name}.MasterMindAboutActivity")
-    startActivity(i)
+    i.setClassName($package_name, "#{$package_name}.#{activity}")
+    start_activity(i)
   end
 
   def demo_mode
-    prefs = PreferenceManager.getDefaultSharedPreferences self
-    prefs.getString("demo_mode", "off") != "off"
+    #PreferenceManager.getDefaultSharedPreferences(self).get_boolean("DEMO_MODE", false)
+    get_preferences(Context::MODE_PRIVATE).get_boolean("DEMO_MODE", false)
+    PreferenceManager.getDefaultSharedPreferences(self).get_boolean("DEMO_MODE", false)
   end
 
   def number_field_layout
@@ -72,14 +96,17 @@ class MasterMindMainActivity
 
   def process_guess
     toast 'Nice guess!'
+    result = @mastermind.guess(to_guess(@num1), to_guess(@num2), to_guess(@num3), to_guess(@num4))
+    @text_view.text = result_message result
+  end
 
-    result = @mastermind.guess(@num1.text.to_s.to_i, @num2.text.to_s.to_i, @num3.text.to_s.to_i, @num4.text.to_s.to_i)
+  def to_guess (field)
+    field.text.to_s.to_i
+  end
 
-    if result.correctly_guessed
-      @text_view.text = $package.R::string::congrats
-    else
-      @text_view.text = 'You have 2 numbers and 1 positions correct.'
-    end
+  def result_message (result)
+    return $package.R::string::congrats if result.correctly_guessed
+    return "You have " + result.correct_numbers.to_s + " numbers and " + result.correct_positions.to_s + " positions correct."
   end
 
 end

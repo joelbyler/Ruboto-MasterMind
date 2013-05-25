@@ -19,9 +19,7 @@ class MainScreen
 
   def click_menu_item(which)
     platform.chain_calls do |d|
-      # get the id of the menu item, store it in @@id@@
       d.id_from_name which, :target => :Brazenhead, :variable => '@@id@@'
-      # give the @@id@@ back to Robotium to click on the menu option
       d.click_on_action_bar_item '@@id@@', :target => :Robotium
     end
   end

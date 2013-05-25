@@ -1,9 +1,9 @@
 Feature: Input Screen
   Background: Setup the application for use with test numbers
-
-  Scenario: Welcome the user
     Given the application launches
     And I switch to demo mode
+
+  Scenario: Welcome the user
     Then I see "Enter four numbers below and submit your guess"
 
   Scenario: User can guess
@@ -17,7 +17,6 @@ Feature: Input Screen
     Then I see "You have 2 numbers and 1 positions correct."
 
   Scenario: User recieves feedback on a guess
-    Given I enter all of the correct numbers
+    Given I enter all of the correct demo numbers
     When I press the submit button
     Then I see "Congrats, you solved the puzzle"
-
