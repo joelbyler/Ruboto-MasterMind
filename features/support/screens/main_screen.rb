@@ -11,10 +11,10 @@ class MainScreen
   button(:submit, :text => 'Submit Guess')
 
   def guess (first, second, third, forth)
-    number1 = first.to_s
-    number2 = second.to_s
-    number3 = third.to_s
-    number4 = forth.to_s
+    self.number1 = first.to_s
+    self.number2 = second.to_s
+    self.number3 = third.to_s
+    self.number4 = forth.to_s
   end
 
   def click_menu_item(which)

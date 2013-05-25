@@ -1,4 +1,5 @@
-Feature: Input Screen
+Feature: User will see feedback when making a guess
+
   Background: Setup the application for use with test numbers
     Given the application launches
     And I switch to demo mode

@@ -1,4 +1,4 @@
-Feature: About screen
+Feature: Information about the application is provided
 
   Scenario: About application is located on the menu
     Given the application launches

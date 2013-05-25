@@ -23,16 +23,24 @@ class MasterMindMainActivity
           @text_view = text_view :text => $package.R::string::header_text, :id => 10, :width => :match_parent, :gravity => :center, :text_size => 24.0
 
           linear_layout :orientation => :horizontal do
-            @num1 = edit_text(:single_line => true, :id => 20, :layout => number_field_layout, :input_type => android.text.InputType::TYPE_CLASS_NUMBER)
-            @num2 = edit_text(:single_line => true, :id => 21, :layout => number_field_layout, :input_type => android.text.InputType::TYPE_CLASS_NUMBER)
-            @num3 = edit_text(:single_line => true, :id => 22, :layout => number_field_layout, :input_type => android.text.InputType::TYPE_CLASS_NUMBER)
-            @num4 = edit_text(:single_line => true, :id => 23, :layout => number_field_layout, :input_type => android.text.InputType::TYPE_CLASS_NUMBER)
+            @num1 = number_field
+            @num2 = number_field
+            @num3 = number_field
+            @num4 = number_field
           end
-          button :text => 'Submit Guess', :width => :match_parent, :id => 43, :on_click_listener => proc { process_guess }
+          button :text => 'Submit Guess', :width => :match_parent, :on_click_listener => proc { process_guess }
         end
     rescue
       puts "Exception creating activity: #{$!}"
       puts $!.backtrace.join("\n")
+  end
+
+  def number_field
+    edit_text(:single_line => true, :layout => number_field_layout, :input_type => android.text.InputType::TYPE_CLASS_NUMBER)
+  end
+
+  def number_field_layout
+    {:width= => :fill_parent, :height= => :wrap_content, :weight= => 1.0}
   end
 
   def on_create_options_menu(menu)
@@ -85,13 +93,7 @@ class MasterMindMainActivity
   end
 
   def demo_mode
-    #PreferenceManager.getDefaultSharedPreferences(self).get_boolean("DEMO_MODE", false)
-    get_preferences(Context::MODE_PRIVATE).get_boolean("DEMO_MODE", false)
     PreferenceManager.getDefaultSharedPreferences(self).get_boolean("DEMO_MODE", false)
-  end
-
-  def number_field_layout
-    {:width= => :fill_parent, :height= => :wrap_content, :weight= => 1.0}
   end
 
   def process_guess

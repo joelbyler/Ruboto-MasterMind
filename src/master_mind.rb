@@ -1,26 +1,10 @@
 class MasterMind
   attr_accessor :first, :second, :third, :forth
   def initialize (first=nil, second=nil, third=nil, forth=nil)
-    if (first == nil)
-      @first = rand(0..9)
-    else
-      @first = first
-    end
-    if (second == nil)
-      @second = rand(0..9)
-    else
-      @second = second
-    end
-    if (third == nil)
-      @third = rand(0..9)
-    else
-      @third = third
-    end
-    if (forth == nil)
-      @forth = rand(0..9)
-    else
-      @forth = forth
-    end
+    @first=first || rand(0..9)
+    @second=second || rand(0..9)
+    @third=third || rand(0..9)
+    @forth=forth || rand(0..9)
   end
 
   def numbers
