@@ -15,6 +15,7 @@ before_install:
     - unzip sysimg_armv7a-15_r02.zip -d ${ANDROID_HOME}/system-images/android-15
 
     # Update SDK
+    - android list sdk
     - android update sdk -u -f --filter 1,2
     - echo y | android update sdk -u -f --filter android-15
 
