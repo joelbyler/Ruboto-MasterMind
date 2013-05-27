@@ -8,7 +8,8 @@ ruboto_import_widgets :Button, :LinearLayout, :TextView, :EditText
 
 java_import "android.preference.PreferenceManager"
 java_import "android.content.Context"
-
+java_import "android.text.InputType"
+java_import "android.view.Gravity"
 
 class MasterMindMainActivity
   def on_create(bundle)
@@ -36,7 +37,11 @@ class MasterMindMainActivity
   end
 
   def number_field
-    edit_text(:single_line => true, :layout => number_field_layout, :input_type => android.text.InputType::TYPE_CLASS_NUMBER)
+    edit_text(
+      :single_line => true,
+      :layout => number_field_layout,
+      :input_type => InputType::TYPE_CLASS_NUMBER,
+      :gravity => Gravity::CENTER_HORIZONTAL)
   end
 
   def number_field_layout

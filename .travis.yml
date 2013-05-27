@@ -17,6 +17,7 @@ before_install:
     # Update SDK
     - android list sdk
     - android update sdk -u -f --filter 1,2
+    - android list sdk
     - echo y | android update sdk -u -f --filter android-15
 
     # Create an emulator for testing against
