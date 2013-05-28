@@ -28,6 +28,7 @@ before_install:
     # Need to figure out how to get the emulator to start up properly
     - emulator -avd Android_4.0.3 -port 5554 -no-window -no-audio -no-boot-anim &
     - sh ./features/support/wait_for_emulator.sh
+    - gem install --pre ruboto
 
 language: ruby
 rvm:
