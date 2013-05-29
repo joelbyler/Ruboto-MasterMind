@@ -31,7 +31,7 @@ before_install:
 
     # Install ruboto environment
     - gem install ruboto
-    - ruboto setup -y -t android-15
+    - ruboto setup
 
 language: ruby
 rvm:
