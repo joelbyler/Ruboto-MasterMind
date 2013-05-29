@@ -26,12 +26,12 @@ class MasterMindPreferencesActivity
   private
 
   def load_prefs
-    demo_mode = PreferenceManager.getDefaultSharedPreferences(self).get_boolean("DEMO_MODE", false)
+    demo_mode = PreferenceManager.getDefaultSharedPreferences(self).get_boolean(MasterMindMainActivity::PREFERENCE_DEMO_MODE, false)
     @check_box.set_checked(demo_mode)
   end
 
   def save_prefs
-    PreferenceManager.getDefaultSharedPreferences(self).edit.put_boolean("DEMO_MODE", @check_box.is_checked).commit
+    PreferenceManager.getDefaultSharedPreferences(self).edit.put_boolean(MasterMindMainActivity::PREFERENCE_DEMO_MODE, @check_box.is_checked).commit
   end
 
 end

@@ -1,3 +1,4 @@
+require 'ruboto/activity'
 require 'ruboto/widget'
 require 'ruboto/util/toast'
 
@@ -11,7 +12,16 @@ java_import "android.content.Context"
 java_import "android.text.InputType"
 java_import "android.view.Gravity"
 
+TEXT_MESSAGE_VIEWID = 41
+FIELD_NUMBER_ONE_VIEWID = 42
+FIELD_NUMBER_TWO_VIEWID = 43
+FIELD_NUMBER_THREE_VIEWID = 44
+FIELD_NUMBER_FOUR_VIEWID = 45
+BUTTON_SUBMIT_GUESS = 46
+PREFERENCE_DEMO_MODE = "DEMO_MODE"
+
 class MasterMindMainActivity
+
   def on_create(bundle)
     super
 
@@ -21,24 +31,25 @@ class MasterMindMainActivity
 
     self.content_view =
         linear_layout :orientation => :vertical do
-          @text_view = text_view :text => $package.R::string::header_text, :id => 10, :width => :match_parent, :gravity => :center, :text_size => 24.0
+          @text_view = text_view :text => $package.R::string::header_text, :id => TEXT_MESSAGE_VIEWID, :width => :match_parent, :gravity => :center, :text_size => 24.0
 
           linear_layout :orientation => :horizontal do
-            @num1 = number_field
-            @num2 = number_field
-            @num3 = number_field
-            @num4 = number_field
+            @num1 = number_field FIELD_NUMBER_ONE_VIEWID
+            @num2 = number_field FIELD_NUMBER_TWO_VIEWID
+            @num3 = number_field FIELD_NUMBER_THREE_VIEWID
+            @num4 = number_field FIELD_NUMBER_FOUR_VIEWID
           end
-          button :text => 'Submit Guess', :width => :match_parent, :on_click_listener => proc { process_guess }
+          button :text => 'Submit Guess', :id => BUTTON_SUBMIT_GUESS, :width => :match_parent, :on_click_listener => proc { process_guess }
         end
     rescue
       puts "Exception creating activity: #{$!}"
       puts $!.backtrace.join("\n")
   end
 
-  def number_field
+  def number_field (id)
     edit_text(
       :single_line => true,
+      :id => id,
       :layout => number_field_layout,
       :input_type => InputType::TYPE_CLASS_NUMBER,
       :gravity => Gravity::CENTER_HORIZONTAL)
@@ -96,7 +107,7 @@ class MasterMindMainActivity
   end
 
   def demo_mode
-    PreferenceManager.getDefaultSharedPreferences(self).get_boolean("DEMO_MODE", false)
+    PreferenceManager.getDefaultSharedPreferences(self).get_boolean(PREFERENCE_DEMO_MODE, false)
   end
 
   def process_guess
@@ -111,7 +122,7 @@ class MasterMindMainActivity
 
   def result_message (result)
     return $package.R::string::congrats if result.correctly_guessed
-    return "You have " + result.correct_numbers.to_s + " numbers and " + result.correct_positions.to_s + " positions correct."
+    return "You have #{result.correct_numbers.to_s} numbers and #{result.correct_positions.to_s} positions correct."
   end
 
 end
