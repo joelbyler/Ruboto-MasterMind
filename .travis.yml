@@ -30,7 +30,7 @@ before_install:
     - sh ./features/support/wait_for_emulator.sh
 
     # Install ruboto environment
-    - gem install --pre ruboto
+    - gem install ruboto
     - ruboto setup -y -t android-15
 
 language: ruby
