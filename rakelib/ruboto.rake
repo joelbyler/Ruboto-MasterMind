@@ -4,6 +4,7 @@ require 'time'
 require 'rake/clean'
 require 'rexml/document'
 require 'timeout'
+require 'net/telnet'
 
 ON_WINDOWS = (RbConfig::CONFIG['host_os'] =~ /mswin|mingw/i)
 
@@ -14,39 +15,57 @@ if `#{ANT_CMD} -version` !~ /version (\d+)\.(\d+)\.(\d+)/ || $1.to_i < 1 || ($1.
   exit 1
 end
 
+#
+# OS independent "which"
+# From: http://stackoverflow.com/questions/2108727/which-in-ruby-checking-if-program-exists-in-path-from-ruby
+#
+def which(cmd)
+  exts = ENV['PATHEXT'] ? ENV['PATHEXT'].split(';') : ['']
+  ENV['PATH'].split(File::PATH_SEPARATOR).each do |path|
+    exts.each do |ext|
+      exe = File.join(path, "#{cmd}#{ext}")
+      return exe if File.executable? exe
+    end
+  end
+  nil
+end
+
 adb_version_str = `adb version`
 (puts 'Android SDK platform tools not in PATH (adb command not found).'; exit 1) unless $? == 0
 (puts "Unrecognized adb version: #$1"; exit 1) unless adb_version_str =~ /Android Debug Bridge version (\d+\.\d+\.\d+)/
 (puts "adb version 1.0.31 or later required.  Version found: #$1"; exit 1) unless Gem::Version.new($1) >= Gem::Version.new('1.0.31')
-unless ENV['ANDROID_HOME']
-  unless ON_WINDOWS
-    begin
-      adb_path = `which adb`
-      ENV['ANDROID_HOME'] = File.dirname(File.dirname(adb_path)) if $? == 0
-    rescue Errno::ENOENT
-      puts "Unable to detect adb location: #$!"
-    end
-  end
+if ENV['ANDROID_HOME'].nil? && (adb_path = which('adb'))
+  ENV['ANDROID_HOME'] = File.dirname(File.dirname(adb_path))
 end
 (puts 'You need to set the ANDROID_HOME environment variable.'; exit 1) unless ENV['ANDROID_HOME']
 
-# FIXME(uwe):  On windows the file is called dx.bat
-dx_filename = File.join(ENV['ANDROID_HOME'], 'platform-tools', ON_WINDOWS ? 'dx.bat' : 'dx')
-unless File.exists? dx_filename
-  puts 'You need to install the Android SDK Platform-tools!'
+# FIXME(uwe): Simplify when we stop supporting Android SDK < 22: Don't look in pltform-tools for dx
+dx_filename = Dir[File.join(ENV['ANDROID_HOME'], '{build-tools/*,platform-tools}', ON_WINDOWS ? 'dx.bat' : 'dx')][-1]
+# EMXIF
+
+unless dx_filename
+  puts 'You need to install the Android SDK Build-tools!'
   exit 1
 end
 new_dx_content = File.read(dx_filename).dup
 
-# FIXME(uwe): Set Xmx on windows bat script:
-# set defaultXmx=-Xmx1024M
-
-xmx_pattern = /^defaultMx="-Xmx(\d+)(M|m|G|g|T|t)"/
+xmx_pattern = ON_WINDOWS ? /^set defaultXmx=-Xmx(\d+)(M|m|G|g|T|t)/ : /^defaultMx="-Xmx(\d+)(M|m|G|g|T|t)"/
+MINIMUM_DX_HEAP_SIZE = 1536
 if new_dx_content =~ xmx_pattern &&
-    ($1.to_i * 1024 ** {'M' => 2, 'G' => 3, 'T' => 4}[$2.upcase]) < 2560*1024**2
-  puts "Increasing max heap space from #$1#$2 to 2560M in #{dx_filename}"
-  new_dx_content.sub!(xmx_pattern, 'defaultMx="-Xmx2560M"')
+    ($1.to_i * 1024 ** {'M' => 2, 'G' => 3, 'T' => 4}[$2.upcase]) < MINIMUM_DX_HEAP_SIZE*1024**2
+  puts "Increasing max heap space from #$1#$2 to #{MINIMUM_DX_HEAP_SIZE}M in #{dx_filename}"
+  new_xmx_value = ON_WINDOWS ? %Q{set defaultXmx=-Xmx#{MINIMUM_DX_HEAP_SIZE}M} : %Q{defaultMx="-Xmx#{MINIMUM_DX_HEAP_SIZE}M"}
+  new_dx_content.sub!(xmx_pattern, new_xmx_value)
+
+  # FIXME(uwe): For travis debugging  Remove when travis is stable.
+  new_dx_content.sub!(/^exec/, "free\ncat /proc/meminfo\necho Virtual:\nps -e -ovsize=,args= | sort -b -k1,1n | tail -n10\necho RSS:\nps -e -orss=,args= | sort -b -k1,1n | tail -n10\necho $javaOpts\necho $@\njava -XX:+PrintFlagsFinal -version | grep InitialHeapSize\nexec") if RbConfig::CONFIG['host_os'] =~ /linux/
+  # EMXIF
+
   File.open(dx_filename, 'w') { |f| f << new_dx_content } rescue puts "\n!!! Unable to increase dx heap size !!!\n\n"
+
+  # FIXME(uwe): For travis debugging  Remove when travis is stable.
+  puts new_dx_content.lines.grep(xmx_pattern)
+  # EMXIF
 end
 
 def manifest; @manifest ||= REXML::Document.new(File.read(MANIFEST_FILE)) end
@@ -63,7 +82,7 @@ MANIFEST_FILE = File.expand_path 'AndroidManifest.xml'
 PROJECT_PROPS_FILE = File.expand_path 'project.properties'
 RUBOTO_CONFIG_FILE = File.expand_path 'ruboto.yml'
 GEM_FILE = File.expand_path 'Gemfile.apk'
-GEM_LOCK_FILE = File.expand_path 'Gemfile.apk.lock'
+GEM_LOCK_FILE = "#{GEM_FILE}.lock"
 RELEASE_APK_FILE = File.expand_path "bin/#{build_project_name}-release.apk"
 APK_FILE = File.expand_path "bin/#{build_project_name}-debug.apk"
 TEST_APK_FILE = File.expand_path "test/bin/#{build_project_name}Test-debug.apk"
@@ -74,6 +93,10 @@ RUBY_SOURCE_FILES = Dir[File.expand_path 'src/**/*.rb']
 APK_DEPENDENCIES = [MANIFEST_FILE, RUBOTO_CONFIG_FILE, BUNDLE_JAR] + JRUBY_JARS + JAVA_SOURCE_FILES + RESOURCE_FILES + RUBY_SOURCE_FILES
 KEYSTORE_FILE = (key_store = File.readlines('ant.properties').grep(/^key.store=/).first) ? File.expand_path(key_store.chomp.sub(/^key.store=/, '').sub('${user.home}', '~')) : "#{build_project_name}.keystore"
 KEYSTORE_ALIAS = (key_alias = File.readlines('ant.properties').grep(/^key.alias=/).first) ? key_alias.chomp.sub(/^key.alias=/, '') : build_project_name
+APK_FILE_REGEXP = /^-rw-r--r--\s+(?:system|\d+\s+\d+)\s+(?:system|\d+)\s+(\d+)\s+(\d{4}-\d{2}-\d{2} \d{2}:\d{2}|\w{3} \d{2}\s+(?:\d{4}|\d{2}:\d{2}))\s+(.*)$/
+#                   -rw-r--r-- system   system    7487556 2013-04-21 14:01 org.ruboto.example.gps-1.apk
+#                   -rw-r--r--    1 1000     1000         59252 Aug 15  2010 /data/app/org.update_test-1.apk
+#                   -rw-r--r--    1 1000     1000         59265 Aug 15 01:11 /data/app/org.update2_test-1.apk
 
 CLEAN.include('bin', 'gen', 'test/bin', 'test/gen')
 
@@ -161,9 +184,9 @@ task :tag do
   sh 'git push origin master --tags'
 end
 
-desc 'Start the emulator with larger disk'
+desc 'Start the emulator'
 task :emulator do
-  sh "emulator -partition-size 1024 -avd Android_#{sdk_level_name}"
+  start_emulator(sdk_level)
 end
 
 desc 'Start the application on the device/emulator.'
@@ -257,24 +280,45 @@ task :bundle => BUNDLE_JAR
 file BUNDLE_JAR => [GEM_FILE, GEM_LOCK_FILE] do
   next unless File.exists? GEM_FILE
   puts "Generating #{BUNDLE_JAR}"
-
-  # Override RUBY_ENGINE (we can bundle from MRI for JRuby)
-  platforms = Gem.platforms
-  ruby_engine = defined?(RUBY_ENGINE) && RUBY_ENGINE
-  Gem.platforms = [Gem::Platform::RUBY, Gem::Platform.new('universal-java')]
-  Object.const_set('RUBY_ENGINE', 'jruby')
-
-  ENV['BUNDLE_GEMFILE'] = GEM_FILE
   require 'bundler'
-  Bundler.bundle_path = Pathname.new BUNDLE_PATH
+  if Gem::Version.new(Bundler::VERSION) <= Gem::Version.new('1.3.5')
+    require 'bundler/vendored_thor'
 
-  definition = Bundler.definition
-  definition.validate_ruby!
-  Bundler::Installer.install(Bundler.root, definition)
+    # Store original RubyGems/Bundler environment
+    platforms = Gem.platforms
+    ruby_engine = defined?(RUBY_ENGINE) && RUBY_ENGINE
+    gem_paths = {'GEM_HOME' => Gem.path, 'GEM_PATH' => Gem.dir}
 
-  # Restore RUBY_ENGINE (limit the scope of this hack)
-  Object.const_set('RUBY_ENGINE', ruby_engine) if ruby_engine
-  Gem.platforms = platforms
+    # Override RUBY_ENGINE (we can bundle from MRI for JRuby)
+    Gem.platforms = [Gem::Platform::RUBY, Gem::Platform.new("universal-dalvik-#{sdk_level}"), Gem::Platform.new('universal-java')]
+    Gem.paths = {'GEM_HOME' => BUNDLE_PATH, 'GEM_PATH' => BUNDLE_PATH}
+    old_verbose, $VERBOSE = $VERBOSE, nil
+    begin
+      Object.const_set('RUBY_ENGINE', 'jruby')
+    ensure
+      $VERBOSE = old_verbose
+    end
+
+    ENV['BUNDLE_GEMFILE'] = GEM_FILE
+    Bundler.ui = Bundler::UI::Shell.new
+    Bundler.bundle_path = Pathname.new BUNDLE_PATH
+    definition = Bundler.definition
+    definition.validate_ruby!
+    Bundler::Installer.install(Bundler.root, definition)
+
+    # Restore RUBY_ENGINE (limit the scope of this hack)
+    old_verbose, $VERBOSE = $VERBOSE, nil
+    begin
+      Object.const_set('RUBY_ENGINE', ruby_engine)
+    ensure
+      $VERBOSE = old_verbose
+    end
+    Gem.platforms = platforms
+    Gem.paths = gem_paths
+  else
+    # Bundler.settings[:platform] = Gem::Platform::DALVIK
+    sh "bundle install --gemfile #{GEM_FILE} --path=#{BUNDLE_PATH} --platform=dalvik#{sdk_level}"
+  end
 
   gem_paths = Dir["#{BUNDLE_PATH}/gems"]
   raise 'Gem path not found' if gem_paths.empty?
@@ -284,7 +328,7 @@ file BUNDLE_JAR => [GEM_FILE, GEM_LOCK_FILE] do
 
   if package != 'org.ruboto.core' && JRUBY_JARS.none? { |f| File.exists? f }
     Dir.chdir gem_path do
-      Dir['{activerecord-jdbc-adapter, jruby-openssl}-*'].each do |g|
+      Dir['{activerecord-jdbc-adapter,jruby-openssl}-*'].each do |g|
         puts "Removing #{g} gem since it is included in the RubotoCore platform apk."
         FileUtils.rm_rf g
       end
@@ -360,6 +404,10 @@ Java::arjdbc.jdbc.AdapterJavaService.new.basicLoad(JRuby.runtime)
             # files = classes.grep(dbs)
             # FileUtils.rm_f(files)
             # ODOT
+
+            # FIXME(uwe): Extract files with case sensitive names for ARJDBC 1.2.7-1.3.x
+            puts `jar xf #{jar} arjdbc/mssql/MSSQLRubyJdbcConnection.class arjdbc/sqlite3/SQLite3RubyJdbcConnection.class`
+            # EMXIF
 
           elsif jar =~ /shared\/jopenssl.jar$/
             jar_load_code = <<-END_CODE
@@ -462,36 +510,20 @@ end
 # Return nil if the package is not installed.
 def package_installed?(test = false)
   package_name = "#{package}#{'.tests' if test}"
-  %w( -0 -1 -2).each do |i|
-    path = "/data/app/#{package_name}#{i}.apk"
-    o = `adb shell ls -l #{path}`.chomp
-    if o =~ /^-rw-r--r-- system\s+system\s+(\d+)\s+(\d{4}-\d{2}-\d{2} \d{2}:\d{2})\s+#{File.basename(path)}$/
-      installed_apk_size = $1.to_i
-      installed_timestamp = Time.parse($2)
-      apk_file = test ? TEST_APK_FILE : APK_FILE
-      if !File.exists?(apk_file) || (installed_apk_size == File.size(apk_file) &&
-          installed_timestamp >= File.mtime(apk_file))
-        return true
-      else
-        return false
-      end
-    end
-
-    sdcard_path = "/mnt/asec/#{package_name}#{i}/pkg.apk"
-    o = `adb shell ls -l #{sdcard_path}`.chomp
-    if o =~ /^-r-xr-xr-x system\s+root\s+(\d+)\s+(\d{4}-\d{2}-\d{2} \d{2}:\d{2})\s+#{File.basename(sdcard_path)}$/
-      installed_apk_size = $1.to_i
-      installed_timestamp = Time.parse($2)
-      apk_file = test ? TEST_APK_FILE : APK_FILE
-      if !File.exists?(apk_file) || (installed_apk_size == File.size(apk_file) &&
-          installed_timestamp >= File.mtime(apk_file))
-        return true
-      else
-        return false
-      end
-    end
+  loop do
+    path_line = `adb shell pm path #{package_name}`.chomp
+    return nil if $? == 0 && path_line.empty?
+    break if $? == 0 && path_line =~ /^package:(.*)$/
+    sleep 0.5
   end
-  nil
+  path = $1
+  o = `adb shell ls -l #{path}`.chomp
+  raise "Unexpected ls output: #{o}" if o !~ APK_FILE_REGEXP
+  installed_apk_size = $1.to_i
+  installed_timestamp = Time.parse($2)
+  apk_file = test ? TEST_APK_FILE : APK_FILE
+  !File.exists?(apk_file) || (installed_apk_size == File.size(apk_file) &&
+      installed_timestamp >= File.mtime(apk_file))
 end
 
 def replace_faulty_code(faulty_file, faulty_code)
@@ -522,6 +554,11 @@ def build_apk(t, release)
   if release
     sh "#{ANT_CMD} release"
   else
+
+    # FIXME(uwe): For travis debugging  Remove when travis is stable.
+    sh 'free' if RbConfig::CONFIG['host_os'] =~ /linux/
+    # EMXIF
+
     sh "#{ANT_CMD} debug"
   end
   true
@@ -541,7 +578,7 @@ def install_apk
     install_retry_count = 0
     begin
       timeout 120 do
-        output = `adb install -r #{APK_FILE} 2>&1`
+        output = `adb install -r "#{APK_FILE}" 2>&1`
       end
     rescue Timeout::Error
       puts "Installing package #{package} timed out."
@@ -551,7 +588,7 @@ def install_apk
         retry
       end
       puts 'Trying one final time to install the package:'
-      output = `adb install -r #{APK_FILE} 2>&1`
+      output = `adb install -r "#{APK_FILE}" 2>&1`
     end
     if $? == 0 && output !~ failure_pattern && output =~ success_pattern
       clear_update
@@ -574,7 +611,7 @@ def install_apk
   install_retry_count = 0
   begin
     timeout 120 do
-      output = `adb install #{APK_FILE} 2>&1`
+      output = `adb install "#{APK_FILE}" 2>&1`
     end
   rescue Timeout::Error
     puts "Installing package #{package} timed out."
@@ -584,7 +621,7 @@ def install_apk
       retry
     end
     puts 'Trying one final time to install the package:'
-    output = `adb install #{APK_FILE} 2>&1`
+    output = `adb install "#{APK_FILE}" 2>&1`
   end
   puts output
   raise "Install failed (#{$?}) #{$1 ? "[#$1}]" : output}" if $? != 0 || output =~ failure_pattern || output !~ success_pattern
@@ -624,4 +661,168 @@ end
 def stop_app
   output = `adb shell ps | grep #{package} | awk '{print $2}' | xargs adb shell kill`
   output !~ /Operation not permitted/
+end
+
+def start_emulator(sdk_level)
+  STDOUT.sync = true
+  if RbConfig::CONFIG['host_cpu'] == 'x86_64'
+    emulator_cmd = 'emulator64-arm'
+  else
+    emulator_cmd = 'emulator-arm'
+  end
+
+  emulator_opts = '-partition-size 256'
+  if !ON_WINDOWS && ENV['DISPLAY'].nil?
+    emulator_opts << ' -no-window -no-audio'
+  end
+
+  avd_name = "Android_#{sdk_level_name}"
+  new_snapshot = false
+
+  if `adb devices` =~ /emulator-5554/
+    t = Net::Telnet.new('Host' => 'localhost', 'Port' => 5554, 'Prompt' => /^OK\n/)
+    t.waitfor(/^OK\n/)
+    output = ''
+    t.cmd('avd name') { |c| output << c }
+    t.close
+    if output =~ /(.*)\nOK\n/
+      running_avd_name = $1
+      if running_avd_name == avd_name
+        puts "Emulator #{avd_name} is already running."
+        return
+      else
+        puts "Emulator #{running_avd_name} is running."
+      end
+    else
+      raise "Unexpected response from emulator: #{output.inspect}"
+    end
+  else
+    puts 'No emulator is running.'
+  end
+
+  loop do
+    `killall -0 #{emulator_cmd} 2> /dev/null`
+    if $? == 0
+      `killall #{emulator_cmd}`
+      10.times do |i|
+        `killall -0 #{emulator_cmd} 2> /dev/null`
+        if $? != 0
+          break
+        end
+        if i == 3
+          print 'Waiting for emulator to die: ...'
+        elsif i > 3
+          print '.'
+        end
+        sleep 1
+      end
+      puts
+      `killall -0 #{emulator_cmd} 2> /dev/null`
+      if $? == 0
+        puts 'Emulator still running.'
+        `killall -9 #{emulator_cmd}`
+        sleep 1
+      end
+    end
+
+    if [17, 16, 15, 13, 11].include? sdk_level
+      abi_opt = '--abi armeabi-v7a'
+    elsif sdk_level == 10
+      abi_opt = '--abi armeabi'
+    end
+
+    unless File.exists? "#{ENV['HOME']}/.android/avd/#{avd_name}.avd"
+      puts "Creating AVD #{avd_name}"
+      puts `echo n | android create avd -a -n #{avd_name} -t android-#{sdk_level} #{abi_opt} -c 64M -s HVGA`
+      if $? != 0
+        puts 'Failed to create AVD.'
+        exit 3
+      end
+      avd_config_file_name = "#{ENV['HOME']}/.android/avd/#{avd_name}.avd/config.ini"
+      old_avd_config = File.read(avd_config_file_name)
+      heap_size = (File.read('AndroidManifest.xml') =~ /largeHeap/) ? 256 : 48
+      new_avd_config = old_avd_config.gsub(/vm.heapSize=([0-9]*)/){|m| p m ; m.to_i < heap_size ? "vm.heapSize=#{heap_size}" : m}
+      File.write(avd_config_file_name, new_avd_config) if new_avd_config != old_avd_config
+      new_snapshot = true
+    end
+
+    puts 'Start emulator'
+    system "emulator -avd #{avd_name} #{emulator_opts} #{'&' unless ON_WINDOWS}"
+    return if ON_WINDOWS
+
+    3.times do |i|
+      sleep 1
+      `killall -0 #{emulator_cmd} 2> /dev/null`
+      if $? == 0
+        break
+      end
+      if i == 3
+        print 'Waiting for emulator: ...'
+      elsif i > 3
+        print '.'
+      end
+    end
+    puts
+    `killall -0 #{emulator_cmd} 2> /dev/null`
+    if $? != 0
+      puts 'Unable to start the emulator.  Retrying without loading snapshot.'
+      system "emulator -no-snapshot-load -avd #{avd_name} #{emulator_opts} #{'&' unless ON_WINDOWS}"
+      10.times do |i|
+        `killall -0 #{emulator_cmd} 2> /dev/null`
+        if $? == 0
+          new_snapshot = true
+          break
+        end
+        if i == 3
+          print 'Waiting for emulator: ...'
+        elsif i > 3
+          print '.'
+        end
+        sleep 1
+      end
+    end
+
+    `killall -0 #{emulator_cmd} 2> /dev/null`
+    if $? == 0
+      print 'Emulator started: '
+      50.times do
+        if `adb get-state`.chomp == 'device'
+          break
+        end
+        print '.'
+        sleep 1
+      end
+      puts
+      if `adb get-state`.chomp == 'device'
+        break
+      end
+    end
+    puts 'Unable to start the emulator.'
+  end
+
+  if new_snapshot
+    puts 'Allow the emulator to calm down a bit.'
+    sleep 15
+  end
+
+  system '(
+    set +e
+    for i in 1 2 3 4 5 6 7 8 9 10 ; do
+      sleep 6
+      adb shell input keyevent 82 >/dev/null 2>&1
+      if [ "$?" == "0" ] ; then
+        set -e
+        adb shell input keyevent 82 >/dev/null 2>&1
+        adb shell input keyevent 4 >/dev/null 2>&1
+        exit 0
+      fi
+    done
+    echo "Failed to unlock screen"
+    set -e
+    exit 1
+  ) &'
+
+  system 'adb logcat > adb_logcat.log &'
+
+  puts "Emulator #{avd_name} started OK."
 end

@@ -4,7 +4,7 @@ require 'ruboto/util/toast'
 ruboto_import_widgets :Button, :LinearLayout, :TextView
 
 class MasterMindAboutActivity
-  def onCreate(bundle)
+  def on_create(bundle)
     super
     set_title 'About the Application'
 
@@ -16,13 +16,6 @@ class MasterMindAboutActivity
   rescue
     puts "Exception creating activity: #{$!}"
     puts $!.backtrace.join("\n")
-  end
-
-  private
-
-  def butterfly
-    @text_view.text = 'What hath Matz wrought!'
-    toast 'Flipped a bit via butterfly'
   end
 
 end

@@ -10,5 +10,3 @@ guard 'cucumber', :notification => true, :all_after_pass => false, :cli => '--pr
   watch(%r{^lib/.+\.rb$})                   { "features" }
   watch(%r{^cucumber.yml$})                 { "features" }
 end
-
-

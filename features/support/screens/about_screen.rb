@@ -1,6 +1,6 @@
 class AboutScreen
   include Gametel
 
-  activity "MasterMindAboutActivity"
+  #activity "MasterMindAboutActivity"
 
 end

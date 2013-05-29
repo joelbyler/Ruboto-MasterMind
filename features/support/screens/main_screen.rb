@@ -1,7 +1,7 @@
 class MainScreen
   include Gametel
 
-  activity "MasterMindMainActivity"
+  #activity "MasterMindMainActivity"
 
   text(:number1, :index => 0)
   text(:number2, :index => 1)

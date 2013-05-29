@@ -6,7 +6,7 @@ java_import "android.content.Context"
 ruboto_import_widgets :Button, :LinearLayout, :TextView, :CheckBox
 
 class MasterMindPreferencesActivity
-  def onCreate(bundle)
+  def on_create(bundle)
     super
 
     self.content_view =

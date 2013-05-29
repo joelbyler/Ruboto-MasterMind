@@ -1,8 +1,8 @@
-
 require 'rspec-expectations'
 require 'brazenhead'
 require 'brazenhead/server'
 require 'gametel'
+require 'ADB'
 require 'require_all'
 
 require_rel 'screens'
@@ -17,7 +17,7 @@ end
 
 Before do
   @driver = Driver.new
-  server.start("MasterMindLaunchActivity")
+  server.start("MasterMindRubotoActivity")
 end
 
 After do

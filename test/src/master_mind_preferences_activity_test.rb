@@ -1,4 +1,4 @@
-activity Java::com.joelbyler.mastermind.ruboto.MasterMindPreferencesActivity
+activity Java::org.leandog.mastermind.ruboto.MasterMindPreferencesActivity
 
 setup do |activity|
   start = Time.now

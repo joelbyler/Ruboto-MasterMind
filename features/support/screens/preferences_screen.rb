@@ -1,7 +1,7 @@
 class PreferencesScreen
   include Gametel
 
-  activity "MasterMindPreferencesActivity"
+  #activity "MasterMindPreferencesActivity"
 
   checkbox(:demo_mode, :index => 0)
   button(:save, :text => 'Save Preferences')

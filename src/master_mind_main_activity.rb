@@ -53,7 +53,7 @@ class MasterMindMainActivity
     true
   end
 
-  def onOptionsItemSelected(item)
+  def on_options_item_selected(item)
     if item.get_item_id == $package.R.id.menu_about
       start_about_activity
     else
@@ -64,10 +64,8 @@ class MasterMindMainActivity
 
   def initialize_game
     if demo_mode
-      toast 'turning demo mode ON'
       @mastermind = MasterMind.new 4, 2, 1, 9
     else
-      toast 'turning demo mode OFF'
       @mastermind = MasterMind.new
     end
   end

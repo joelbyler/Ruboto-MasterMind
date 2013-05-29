@@ -25,9 +25,11 @@ before_install:
     - echo no | android create avd -n Android_4.0.3 -t 1 --force
     - echo "hw.ramSize=2048" >> ~/.android/avd/Android_4.0.3.i
 
-    # Need to figure out how to get the emulator to start up properly
+    # Start up emulator
     - emulator -avd Android_4.0.3 -port 5554 -no-window -no-audio -no-boot-anim &
     - sh ./features/support/wait_for_emulator.sh
+
+    # Install ruboto environment
     - gem install --pre ruboto
     - ruboto setup -y -t android-15
 
