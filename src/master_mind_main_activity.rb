@@ -29,21 +29,24 @@ class MasterMindMainActivity
 
     set_title $package.R::string::app_name
 
-    self.content_view =
-        linear_layout :orientation => :vertical do
-          @text_view = text_view :text => $package.R::string::header_text, :id => TEXT_MESSAGE_VIEWID, :width => :match_parent, :gravity => :center, :text_size => 24.0
-
-          linear_layout :orientation => :horizontal do
-            @num1 = number_field FIELD_NUMBER_ONE_VIEWID
-            @num2 = number_field FIELD_NUMBER_TWO_VIEWID
-            @num3 = number_field FIELD_NUMBER_THREE_VIEWID
-            @num4 = number_field FIELD_NUMBER_FOUR_VIEWID
-          end
-          button :text => 'Submit Guess', :id => BUTTON_SUBMIT_GUESS, :width => :match_parent, :on_click_listener => proc { process_guess }
-        end
+    self.content_view = main_layout
     rescue
       puts "Exception creating activity: #{$!}"
       puts $!.backtrace.join("\n")
+  end
+
+  def main_layout
+    linear_layout :orientation => :vertical do
+      @text_view = text_view :text => $package.R::string::header_text, :id => TEXT_MESSAGE_VIEWID, :width => :match_parent, :gravity => :center, :text_size => 24.0
+
+      linear_layout :orientation => :horizontal do
+        @num1 = number_field FIELD_NUMBER_ONE_VIEWID
+        @num2 = number_field FIELD_NUMBER_TWO_VIEWID
+        @num3 = number_field FIELD_NUMBER_THREE_VIEWID
+        @num4 = number_field FIELD_NUMBER_FOUR_VIEWID
+      end
+      button :text => 'Submit Guess', :id => BUTTON_SUBMIT_GUESS, :width => :match_parent, :on_click_listener => proc { process_guess }
+    end
   end
 
   def number_field (id)

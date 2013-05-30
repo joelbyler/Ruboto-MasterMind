@@ -30,8 +30,8 @@ before_install:
     - sh ./features/support/wait_for_emulator.sh
 
     # Install ruboto environment
-    - gem install ruboto
-    - ruboto setup
+    - gem install ruboto --pre
+    - ruboto setup --yes
 
 language: ruby
 rvm:

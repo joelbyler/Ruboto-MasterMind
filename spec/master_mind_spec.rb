@@ -18,7 +18,7 @@ describe MasterMind do
     first_numbers.should_not equal second_numbers
   end
 
-  context "game started" do
+  context "initialized game" do
     let(:mastermind) { MasterMind.new 4, 2, 1, 9 }
 
     it "can give feedback on a guess" do
