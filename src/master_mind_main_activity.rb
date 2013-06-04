@@ -2,8 +2,8 @@ require 'ruboto/activity'
 require 'ruboto/widget'
 require 'ruboto/util/toast'
 
-require 'master_mind'
-require 'guess_result'
+require 'domain/master_mind'
+require 'domain/guess_result'
 
 ruboto_import_widgets :Button, :LinearLayout, :TextView, :EditText
 
